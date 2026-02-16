@@ -1,94 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>CBT Admin Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT Admin - PIN Generator</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; text-align: center; }
-        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .exam-slip { border: 2px dashed #000; padding: 15px; text-align: center; background: #fff; margin-top: 20px; font-family: 'Courier New', monospace; }
-        .pin-box { font-size: 28px; font-weight: bold; background: #eee; padding: 5px; display: block; margin: 10px 0; border: 1px solid #000; }
-        @media print { .no-print { display: none; } body * { visibility: hidden; } #printArea, #printArea * { visibility: visible; } #printArea { position: absolute; left: 0; top: 0; width: 100%; } }
+        /* This makes it look good on your phone */
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        button { width: 95%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* The Exam Slip Design */
+        .slip { border: 2px dashed #333; padding: 15px; margin-top: 20px; background: #fff; display: none; }
+        .pin-text { font-size: 24px; font-weight: bold; color: #d9534f; letter-spacing: 3px; }
+
+        /* Print only the slip */
+        @media print {
+            body * { visibility: hidden; }
+            #slipSection, #slipSection * { visibility: visible; }
+            #slipSection { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
-<body onload="checkAdmin()">
+<body onload="lockPage()">
 
-    <div class="container no-print">
-        <h2>Admin Portal</h2>
+    <div class="card">
+        <h2>CBT Admin</h2>
+        <p>Generate Exam Access</p>
         <input type="text" id="studentName" placeholder="Enter Student Name">
-        <button onclick="createNewSlip()">GENERATE PIN & SLIP</button>
-        <div id="statusList" style="margin-top: 20px; text-align: left; font-size: 14px;"></div>
+        <button onclick="generateEverything()">Generate PIN & Slip</button>
+        
+        <div id="slipSection" class="slip"></div>
     </div>
-
-    <div id="printArea"></div>
 
     <script>
         // 1. Password Protection
-        function checkAdmin() {
-            let pass = prompt("Enter Admin Password:");
-            if (pass !== "1234") { 
-                alert("Access Denied");
-                window.location.href = "index.html"; 
+        function lockPage() {
+            let p = prompt("Enter Admin Password:");
+            if (p !== "1234") { // Change this to your preferred password
+                alert("Wrong password!");
+                window.location.href = "index.html";
             }
-            updateDashboard();
         }
 
-        // 2. PIN & Time Generation Logic
-        function createNewSlip() {
-            const nameInput = document.getElementById('studentName');
-            const name = nameInput.value.trim();
+        // 2. The Generator Brain
+        function generateEverything() {
+            let name = document.getElementById('studentName').value;
+            if (!name) return alert("Enter a name!");
+
+            // Random Day & Time
+            let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            let randomDay = days[Math.floor(Math.random() * days.length)];
+            let randomHour = Math.floor(Math.random() * (19 - 16 + 1)) + 16; // 4pm-7pm
             
-            if (!name) {
-                alert("Please enter a name!");
-                return;
-            }
+            // Random 6-digit PIN
+            let pin = Math.floor(100000 + Math.random() * 900000);
 
-            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-            const randomDay = days[Math.floor(Math.random() * days.length)];
-            const randomHour = Math.floor(Math.random() * (19 - 16 + 1)) + 16; // 4pm - 7pm
-            const pin = Math.floor(100000 + Math.random() * 900000); 
-            const expiry = Date.now() + (48 * 60 * 60 * 1000); // 48 hours
+            // Expiry (48 Hours from now)
+            let expiryTime = Date.now() + (48 * 60 * 60 * 1000);
 
-            const data = { name, pin, day: randomDay, time: randomHour + ":00", expires: expiry };
-
-            // Save to LocalStorage (Browser memory)
+            // Save data to browser memory
+            let studentData = { name: name, pin: pin, day: randomDay, time: randomHour + ":00", expires: expiryTime };
             let db = JSON.parse(localStorage.getItem("exam_db")) || [];
-            db.push(data);
+            db.push(studentData);
             localStorage.setItem("exam_db", JSON.stringify(db));
 
-            // Show the slip on the screen
-            document.getElementById('printArea').innerHTML = `
-                <div class="exam-slip">
-                    <h3>MOCK CBT ENTRANCE SLIP</h3>
-                    <p>Candidate: <strong>${data.name}</strong></p>
-                    <p>Day: <strong>${data.day}</strong> | Time: <strong>${data.time}</strong></p>
-                    <span class="pin-box">${data.pin}</span>
-                    <p><small>Valid for 48 hours from generation</small></p>
-                    <button class="no-print" onclick="window.print()">PRINT SLIP</button>
-                </div>
+            // Show the Slip
+            let slip = document.getElementById('slipSection');
+            slip.style.display = "block";
+            slip.innerHTML = `
+                <h3>EXAM ENTRANCE SLIP</h3>
+                <hr>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Schedule:</strong> ${randomDay} @ ${randomHour}:00</p>
+                <p><strong>Your Secret PIN:</strong></p>
+                <div class="pin-text">${pin}</div>
+                <p><small>Valid for 48 hours only</small></p>
+                <button onclick="window.print()" style="background:green">Print Slip</button>
             `;
-            
-            nameInput.value = ""; // Clear input
-            updateDashboard(); // Update the "Next person" list
-        }
-
-        // 3. Notification/List of registered people
-        function updateDashboard() {
-            let db = JSON.parse(localStorage.getItem("exam_db")) || [];
-            const listDiv = document.getElementById('statusList');
-            if(db.length > 0) {
-                let html = "<strong>Recently Generated:</strong><ul>";
-                // Show the last 3 people generated
-                db.slice(-3).reverse().forEach(s => {
-                    html += `<li>${s.name} - ${s.day} (${s.time})</li>`;
-                });
-                html += "</ul>";
-                listDiv.innerHTML = html;
-            }
         }
     </script>
-    </body>
+</body>
 </html>
