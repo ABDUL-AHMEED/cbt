@@ -22,18 +22,48 @@
         <input type="text" id="studentName" placeholder="Surname Firstname" required>
         <button class="start-btn" onclick="login()">LOGIN TO EXAM</button>
     </div>
+<script>
+    function login() {
+        const name = document.getElementById('studentName').value.trim();
+        // Make sure you have an input with id="studentPin" in your HTML too!
+        const pin = document.getElementById('studentPin').value.trim();
 
-    <script>
-        function login() {
-            const name = document.getElementById('studentName').value;
-            if (name.trim() !== "") {
-                localStorage.setItem('candidateName', name);
-                window.location.href = 'home.html';
-            } else {
-                alert("Oga, please enter your name first!");
-            }
+        if (name === "" || pin === "") {
+            alert("Oga, please enter both your Name and PIN!");
+            return;
         }
-    </script>
+
+        // 1. Get the list of PINs from the Admin page
+        let db = JSON.parse(localStorage.getItem('exam_db')) || [];
+
+        // 2. Find if the student name and PIN match our records
+        const student = db.find(s => s.name === name && s.pin == pin);
+
+        if (!student) {
+            alert("Invalid Name or PIN. Please check your slip!");
+            return;
+        }
+
+        // 3. Time Check: Only allow login between 4 PM (16:00) and 7 PM (19:00)
+        const currentHour = new Date().getHours();
+        if (currentHour < 16 || currentHour >= 19) {
+            alert("Access Denied! The portal is only open from 4:00 PM to 7:00 PM.");
+            return;
+        }
+
+        // 4. Expiry Check: Check if 48 hours have passed
+        if (Date.now() > student.expires) {
+            alert("This PIN has expired! Contact Admin for a new one.");
+            return;
+        }
+
+        // 5. Success!
+        localStorage.setItem('candidateName', name);
+        alert("Verification Successful! Good luck.");
+        window.location.href = 'home.html';
+    }
+</script>
+
 </body>
 
 </html>
