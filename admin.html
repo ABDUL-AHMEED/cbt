@@ -4,129 +4,146 @@
     <title>CBT Admin Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        
-        /* Stats Cards */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
-        .stat-card h3 { margin: 0; font-size: 14px; color: #666; }
-        .stat-card p { margin: 5px 0 0; font-size: 24px; font-weight: bold; color: #007bff; }
-
-        /* Main Section */
-        .main-content { display: flex; flex-direction: column; gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 15px; }
+        .no-print { display: block; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .btn-gen { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
-        /* Activity Table */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th { text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #444; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
-        .status-badge { padding: 4px 8px; border-radius: 20px; font-size: 11px; background: #e1ffed; color: #28a745; font-weight: bold; }
+        /* Dashboard Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background: #f8f9fa; color: #333; }
+        .btn-reprint { background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-        .slip { border: 2px dashed #007bff; padding: 15px; margin-top: 20px; background: #f9fcff; border-radius: 10px; display: none; }
+        /* PROFESSIONAL EXAM SLIP STYLE */
+        #slipPrint { display: none; background: white; width: 100%; max-width: 500px; margin: 20px auto; border: 2px solid #000; padding: 20px; box-sizing: border-box; }
+        .slip-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+        .slip-body { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .candidate-info p { margin: 5px 0; font-size: 15px; }
+        .photo-box { width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; text-align: center; font-size: 10px; font-weight: bold; }
+        .pin-display { font-size: 28px; font-weight: bold; text-align: center; background: #f0f0f0; border: 1px dashed #000; padding: 10px; margin: 15px 0; }
+        .instructions { font-size: 12px; border-top: 1px solid #ccc; padding-top: 10px; }
         
-        @media print { .no-print { display: none; } #slipPrint, #slipPrint * { visibility: visible; position: absolute; left:0; top:0; width:100%; } }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            #slipPrint { display: block !important; border: 2px solid #000; position: absolute; top: 0; left: 0; margin: 0; width: 100%; }
+            .print-btn-hidden { display: none; }
+        }
     </style>
 </head>
-<body onload="lockPage(); updateStats();">
+<body onload="lockPage(); updateTable();">
 
-    <div class="header no-print">
-        <h2 style="margin:0;">CBT Manager 🚀</h2>
-        <button onclick="localStorage.removeItem('exam_db'); location.reload();" style="font-size:10px; background:none; border:none; color:red; cursor:pointer;">Clear All Data</button>
-    </div>
-
-    <div class="stats-grid no-print">
-        <div class="stat-card">
-            <h3>Total PINs</h3>
-            <p id="totalPins">0</p>
-        </div>
-        <div class="stat-card">
-            <h3>Active Now</h3>
-            <p id="activePins">0</p>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="card no-print">
-            <h3>Register New Candidate</h3>
-            <input type="text" id="studentName" placeholder="Full Name of Student">
-            <button class="btn-gen" onclick="generateEverything()">Generate PIN & Print Slip</button>
+    <div class="no-print">
+        <h2 style="text-align:center;">CBT Admin Dashboard</h2>
+        
+        <div class="card">
+            <h3>Generate New Candidate</h3>
+            <input type="text" id="studentName" placeholder="Enter Full Name">
+            <button class="btn-gen" onclick="generateNew()">Generate & Print Slip</button>
         </div>
 
-        <div class="card no-print">
-            <h3>Recent Activity</h3>
-            <table>
+        <div class="card">
+            <h3>Registered Candidates</h3>
+            <table id="activityTable">
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>PIN</th>
-                        <th>Schedule</th>
-                        <th>Status</th>
+                        <th>Day/Time</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="activityTable">
-                    </tbody>
+                <tbody></tbody>
             </table>
         </div>
+    </div>
 
-        <div id="slipPrint" class="slip"></div>
+    <div id="slipPrint">
+        <div id="slipContent"></div>
+        <button class="no-print print-btn-hidden" onclick="window.print()" style="width:100%; padding:10px; background:#28a745; color:white; border:none; margin-top:10px; border-radius:5px;">Confirm Print</button>
     </div>
 
     <script>
         function lockPage() {
-            let p = prompt("Enter Admin Password:");
-            if (p !== "1234") { window.location.href = "index.html"; }
+            let p = prompt("Admin Key:");
+            if (p !== "1234") window.location.href = "index.html";
         }
 
-        function updateStats() {
+        function updateTable() {
             let db = JSON.parse(localStorage.getItem("exam_db")) || [];
-            document.getElementById('totalPins').innerText = db.length;
-            
-            let active = db.filter(s => Date.now() < s.expires).length;
-            document.getElementById('activePins').innerText = active;
-
-            let tableBody = document.getElementById('activityTable');
-            tableBody.innerHTML = db.reverse().slice(0, 5).map(s => `
+            let tbody = document.querySelector("#activityTable tbody");
+            tbody.innerHTML = db.slice().reverse().map((s, index) => `
                 <tr>
                     <td>${s.name}</td>
-                    <td><code>${s.pin}</code></td>
                     <td>${s.day} @ ${s.time}</td>
-                    <td><span class="status-badge">Active</span></td>
+                    <td><button class="btn-reprint" onclick="showSlip(${db.length - 1 - index})">Re-Print</button></td>
                 </tr>
             `).join('');
         }
 
-        function generateEverything() {
-            let name = document.getElementById('studentName').value;
-            if (!name) return alert("Enter a name!");
+        function generateNew() {
+            let name = document.getElementById('studentName').value.trim();
+            if (!name) return alert("Enter name!");
 
             let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-            let randomDay = days[Math.floor(Math.random() * days.length)];
-            let randomHour = Math.floor(Math.random() * (19 - 16 + 1)) + 16;
-            let pin = Math.floor(100000 + Math.random() * 900000);
-            let expiryTime = Date.now() + (48 * 60 * 60 * 1000);
+            let data = {
+                name: name,
+                pin: Math.floor(100000 + Math.random() * 900000),
+                day: days[Math.floor(Math.random() * days.length)],
+                time: (Math.floor(Math.random() * 4) + 16) + ":00",
+                expires: Date.now() + (48 * 60 * 60 * 1000)
+            };
 
-            let studentData = { name: name, pin: pin, day: randomDay, time: randomHour + ":00", expires: expiryTime };
             let db = JSON.parse(localStorage.getItem("exam_db")) || [];
-            db.push(studentData);
+            db.push(data);
             localStorage.setItem("exam_db", JSON.stringify(db));
+            
+            document.getElementById('studentName').value = "";
+            updateTable();
+            showSlip(db.length - 1);
+        }
 
+        function showSlip(index) {
+            let db = JSON.parse(localStorage.getItem("exam_db"));
+            let s = db[index];
             let slip = document.getElementById('slipPrint');
+            let content = document.getElementById('slipContent');
+            
             slip.style.display = "block";
-            slip.innerHTML = `
-                <div style="text-align:center;">
-                    <h2 style="margin:0;">EXAM SLIP</h2>
-                    <p>${name}</p>
-                    <div style="font-size:30px; font-weight:bold; letter-spacing:5px; margin:10px 0;">${pin}</div>
-                    <p>${randomDay} at ${randomHour}:00</p>
-                    <button class="no-print" onclick="window.print()">Print Now</button>
+            content.innerHTML = `
+                <div class="slip-header">
+                    <h2 style="margin:0;">MOCK CBT EXAMINATION</h2>
+                    <p style="margin:5px 0; font-size:12px;">OFFICIAL ENTRANCE ADMIT SLIP</p>
                 </div>
+                <div class="slip-body">
+                    <div class="candidate-info">
+                        <p><strong>CANDIDATE NAME:</strong><br>${s.name.toUpperCase()}</p>
+                        <p><strong>EXAMINATION DAY:</strong> ${s.day}</p>
+                        <p><strong>TIME SLOT:</strong> ${s.time}</p>
+                        <p><strong>VALIDITY:</strong> 48 Hours</p>
+                    </div>
+                    <div class="photo-box">PASSPORT<br>PHOTOGRAPH</div>
+                </div>
+                <div class="pin-display">
+                    <small style="font-size:10px; display:block; letter-spacing:0;">EXAMINATION PIN</small>
+                    ${s.pin}
+                </div>
+                <div class="instructions">
+                    <strong>INSTRUCTIONS:</strong>
+                    <ul>
+                        <li>Present this slip at the center 15 mins before time.</li>
+                        <li>This PIN will only activate during your scheduled time.</li>
+                        <li>Cheating leads to immediate disqualification.</li>
+                    </ul>
+                </div>
+                <p style="text-align:center; font-size:10px; margin-top:20px;">Barcode: || ||| | || ||| || || | ${s.pin}</p>
             `;
             
-            updateStats();
+            // Scroll down to the slip so you can see it
+            slip.scrollIntoView({behavior: "smooth"});
+            // Show the confirm print button
+            document.querySelector('.print-btn-hidden').style.display = "block";
         }
     </script>
 </body>
