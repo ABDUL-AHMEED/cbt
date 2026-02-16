@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Admin - PIN Generator</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        /* The Exam Slip Design */
+        #printSection { margin-top: 30px; }
+        .exam-slip { 
+            border: 2px dashed #000; padding: 15px; text-align: center; 
+            background: #fff; margin-bottom: 10px; font-family: 'Courier New', monospace;
+        }
+        .pin-box { font-size: 28px; font-weight: bold; background: #eee; padding: 5px; display: block; margin: 10px 0; border: 1px solid #000; }
+        
+        /* This hides everything except the slip when you press Print */
+        @media print {
+            body * { visibility: hidden; }
+            #printSection, #printSection * { visibility: visible; }
+            #printSection { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body onload="checkAdmin()">
+
+<div class="container no-print">
+    <h2>Admin Portal</h2>
+    <p>Enter name to generate exam PIN:</p>
+    <input type="text" id="studentName" placeholder="Full Name">
+    <button onclick="createNewSlip()">GENERATE SLIP</button>
+</div>
+<div class="container no-print" style="margin-top:20px;">
+    <h3>Registered Students</h3>
+    <ul id="studentList" style="list-style:none; padding:0;"></ul>
+</div>
+
+<script>
+    // Add this inside your existing script to show the list
+    function updateDashboard() {
+        let db = JSON.parse(localStorage.getItem("exam_db")) || [];
+        let listHtml = db.map(s => `<li>${s.name} - <b>${s.day} ${s.time}</b></li>`).join('');
+        document.getElementById('studentList').innerHTML = listHtml;
+    }
+    // Call updateDashboard() inside createNewSlip() to refresh the list!
+</script>
+
+<div id="printSection"></div>
+
+<script>
+    // 1. Simple Security Gate
+    function checkAdmin() {
+        let pass = prompt("Enter Admin Password:");
+        if (pass !== "1234") { // Change '1234' to your real password
+            alert("Wrong password!");
+            window.location.href = "index.html"; 
+        }
+    }
+
+    // 2. The Logic
+    function createNewSlip() {
+        const name = document.getElementById('studentName').value;
+        if (!name) return alert("Please enter a name");
+
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const randomDay = days[Math.floor(Math.random() * days.length)];
+        const randomHour = Math.floor(Math.random() * (19 - 16 + 1)) + 16; // 4pm - 7pm
+        const pin = Math.floor(100000 + Math.random() * 900000); // 6-digit
+        
+        // 48 hours expiry
+        const expiry = Date.now() + (48 * 60 * 60 * 1000);
+
+        const data = { name, pin, day: randomDay, time: randomHour + ":00", expires: expiry };
+
+        // Save to LocalStorage so the login page can see it
+        let db = JSON.parse(localStorage.getItem("exam_db")) || [];
+        db.push(data);
+        localStorage.setItem("exam_db", JSON.stringify(db));
+
+        // Show the slip
+        document.getElementById('printSection').innerHTML = `
+            <div class="exam-slip">
+                <h2 style="margin:0">MOCK CBT TEST</h2>
+                <hr>
+                <p><strong>CANDIDATE:</strong> ${data.name}</p>
+                <p><strong>SCHEDULED:</strong> ${data.day} @ ${data.time}</p>
+                <span class="pin-box">${data.pin}</span>
+                <p><small>Valid for 48hrs after generation</small></p>
+            </div>
+            <button class="no-print" onclick="window.print()" style="background:#007bff">PRINT SLIP</button>
+        `;
+    }
+</script>
+</body>
+</html>
