@@ -6,7 +6,7 @@
     <title>JAMB Mock - Official Result Slip</title>
     <link rel="icon" type="image/png" href="AH4.png.png">
      <link rel="stylesheet" href="style.css">
-    
+
     <style>
         :root { --primary: #004a99; --success: #28a745; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
@@ -23,6 +23,13 @@
         .footer-actions { padding: 20px; background: #fafafa; display: flex; gap: 10px; justify-content: center; }
         button { padding: 12px 25px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; }
         .btn-print { background: var(--primary); color: white; }
+        
+        /* Added a small style for the print-only view */
+        @media print {
+            .footer-actions { display: none; }
+            body { padding: 0; background: white; }
+            .result-card { box-shadow: none; border: none; }
+        }
     </style>
 </head>
 <body>
@@ -51,8 +58,12 @@
     </div>
 
     <script>
-        document.getElementById('result-name').innerText = localStorage.getItem('candidateName') || "CANDIDATE";
+        // --- YOUR ORIGINAL CODE (KEEPING IT ALL) ---
+        const candidateName = localStorage.getItem('candidateName') || "CANDIDATE";
+        document.getElementById('result-name').innerText = candidateName;
+        
         const data = JSON.parse(localStorage.getItem('jambResult'));
+        
         if (data) {
             document.getElementById('total-score').innerText = data.total;
             const tbody = document.getElementById('subject-rows');
@@ -64,11 +75,25 @@
                         <td style="text-align: right;">${data.breakdown[sub]}/100</td>
                     </tr>`;
             }
+
+            // --- NEW ADMIN SYNC LOGIC (The "Messenger") ---
+            // This part saves the score so you can see it in admin.html
+            let resultData = { 
+                name: candidateName, 
+                score: data.total,
+                date: new Date().toLocaleDateString()
+            };
+
+            let allResults = JSON.parse(localStorage.getItem("exam_results")) || [];
+            
+            // Check if this student's result is already saved to avoid duplicates
+            const alreadySaved = allResults.find(r => r.name === candidateName && r.score === data.total);
+            
+            if (!alreadySaved) {
+                allResults.push(resultData);
+                localStorage.setItem("exam_results", JSON.stringify(allResults));
+            }
         }
     </script>
 </body>
-
 </html>
-
-
-
