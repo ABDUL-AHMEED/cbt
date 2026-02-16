@@ -1,83 +1,132 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CBT Admin Portal</title>
+    <title>CBT Admin Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* This makes it look good on your phone */
-        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        button { width: 95%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         
-        /* The Exam Slip Design */
-        .slip { border: 2px dashed #333; padding: 15px; margin-top: 20px; background: #fff; display: none; }
-        .pin-text { font-size: 24px; font-weight: bold; color: #d9534f; letter-spacing: 3px; }
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
+        .stat-card h3 { margin: 0; font-size: 14px; color: #666; }
+        .stat-card p { margin: 5px 0 0; font-size: 24px; font-weight: bold; color: #007bff; }
 
-        /* Print only the slip */
-        @media print {
-            body * { visibility: hidden; }
-            #slipSection, #slipSection * { visibility: visible; }
-            #slipSection { position: absolute; left: 0; top: 0; width: 100%; }
-        }
+        /* Main Section */
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-gen { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* Activity Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th { text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #444; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        .status-badge { padding: 4px 8px; border-radius: 20px; font-size: 11px; background: #e1ffed; color: #28a745; font-weight: bold; }
+
+        .slip { border: 2px dashed #007bff; padding: 15px; margin-top: 20px; background: #f9fcff; border-radius: 10px; display: none; }
+        
+        @media print { .no-print { display: none; } #slipPrint, #slipPrint * { visibility: visible; position: absolute; left:0; top:0; width:100%; } }
     </style>
 </head>
-<body onload="lockPage()">
+<body onload="lockPage(); updateStats();">
 
-    <div class="card">
-        <h2>CBT Admin</h2>
-        <p>Generate Exam Access</p>
-        <input type="text" id="studentName" placeholder="Enter Student Name">
-        <button onclick="generateEverything()">Generate PIN & Slip</button>
-        
-        <div id="slipSection" class="slip"></div>
+    <div class="header no-print">
+        <h2 style="margin:0;">CBT Manager 🚀</h2>
+        <button onclick="localStorage.removeItem('exam_db'); location.reload();" style="font-size:10px; background:none; border:none; color:red; cursor:pointer;">Clear All Data</button>
+    </div>
+
+    <div class="stats-grid no-print">
+        <div class="stat-card">
+            <h3>Total PINs</h3>
+            <p id="totalPins">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Active Now</h3>
+            <p id="activePins">0</p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card no-print">
+            <h3>Register New Candidate</h3>
+            <input type="text" id="studentName" placeholder="Full Name of Student">
+            <button class="btn-gen" onclick="generateEverything()">Generate PIN & Print Slip</button>
+        </div>
+
+        <div class="card no-print">
+            <h3>Recent Activity</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>PIN</th>
+                        <th>Schedule</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="activityTable">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="slipPrint" class="slip"></div>
     </div>
 
     <script>
-        // 1. Password Protection
         function lockPage() {
             let p = prompt("Enter Admin Password:");
-            if (p !== "1234") { // Change this to your preferred password
-                alert("Wrong password!");
-                window.location.href = "index.html";
-            }
+            if (p !== "1234") { window.location.href = "index.html"; }
         }
 
-        // 2. The Generator Brain
+        function updateStats() {
+            let db = JSON.parse(localStorage.getItem("exam_db")) || [];
+            document.getElementById('totalPins').innerText = db.length;
+            
+            let active = db.filter(s => Date.now() < s.expires).length;
+            document.getElementById('activePins').innerText = active;
+
+            let tableBody = document.getElementById('activityTable');
+            tableBody.innerHTML = db.reverse().slice(0, 5).map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td><code>${s.pin}</code></td>
+                    <td>${s.day} @ ${s.time}</td>
+                    <td><span class="status-badge">Active</span></td>
+                </tr>
+            `).join('');
+        }
+
         function generateEverything() {
             let name = document.getElementById('studentName').value;
             if (!name) return alert("Enter a name!");
 
-            // Random Day & Time
             let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
             let randomDay = days[Math.floor(Math.random() * days.length)];
-            let randomHour = Math.floor(Math.random() * (19 - 16 + 1)) + 16; // 4pm-7pm
-            
-            // Random 6-digit PIN
+            let randomHour = Math.floor(Math.random() * (19 - 16 + 1)) + 16;
             let pin = Math.floor(100000 + Math.random() * 900000);
-
-            // Expiry (48 Hours from now)
             let expiryTime = Date.now() + (48 * 60 * 60 * 1000);
 
-            // Save data to browser memory
             let studentData = { name: name, pin: pin, day: randomDay, time: randomHour + ":00", expires: expiryTime };
             let db = JSON.parse(localStorage.getItem("exam_db")) || [];
             db.push(studentData);
             localStorage.setItem("exam_db", JSON.stringify(db));
 
-            // Show the Slip
-            let slip = document.getElementById('slipSection');
+            let slip = document.getElementById('slipPrint');
             slip.style.display = "block";
             slip.innerHTML = `
-                <h3>EXAM ENTRANCE SLIP</h3>
-                <hr>
-                <p><strong>Name:</strong> ${name}</p>
-                <p><strong>Schedule:</strong> ${randomDay} @ ${randomHour}:00</p>
-                <p><strong>Your Secret PIN:</strong></p>
-                <div class="pin-text">${pin}</div>
-                <p><small>Valid for 48 hours only</small></p>
-                <button onclick="window.print()" style="background:green">Print Slip</button>
+                <div style="text-align:center;">
+                    <h2 style="margin:0;">EXAM SLIP</h2>
+                    <p>${name}</p>
+                    <div style="font-size:30px; font-weight:bold; letter-spacing:5px; margin:10px 0;">${pin}</div>
+                    <p>${randomDay} at ${randomHour}:00</p>
+                    <button class="no-print" onclick="window.print()">Print Now</button>
+                </div>
             `;
+            
+            updateStats();
         }
     </script>
 </body>
