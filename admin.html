@@ -1,117 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CBT Admin | Master Control</title>
+    <title>CBT Admin | Results & PINs</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root { --primary: #007bff; --success: #28a745; --dark: #343a40; --light: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; margin: 0; padding: 15px; color: #333; }
-        
-        /* Dashboard Layout */
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; margin: 0; padding: 15px; }
         .container { max-width: 800px; margin: auto; }
-        .header { text-align: center; margin-bottom: 20px; padding: 10px; background: var(--dark); color: white; border-radius: 10px; }
-        
-        /* Stats Cards */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
-        .stat-card h4 { margin: 0; font-size: 12px; color: #777; text-transform: uppercase; }
-        .stat-card p { margin: 5px 0 0; font-size: 28px; font-weight: bold; color: var(--dark); }
-
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; border-top: 4px solid var(--primary); }
         
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn-main { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-main:active { transform: scale(0.98); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background: var(--light); }
+        .score-badge { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 5px; font-weight: bold; }
 
-        /* Modern Table */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 400px; }
-        th { background: var(--light); padding: 12px; text-align: left; font-size: 13px; color: #555; }
-        td { padding: 12px; border-top: 1px solid #eee; font-size: 14px; }
-        .reprint-btn { background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-
-        /* THE PROFESSIONAL EXAM SLIP (Only visible during print/preview) */
+        /* THE SLIP */
         #slipPreview { display: none; margin-top: 30px; }
-        .slip-box { background: white; border: 2px solid #000; padding: 25px; position: relative; max-width: 500px; margin: auto; }
-        .slip-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
-        .slip-content { display: flex; justify-content: space-between; gap: 10px; }
-        .photo-space { width: 110px; height: 110px; border: 1px solid #000; text-align: center; font-size: 10px; padding-top: 40px; box-sizing: border-box; }
-        .pin-area { font-size: 32px; font-weight: bold; text-align: center; background: #eee; padding: 10px; margin: 15px 0; letter-spacing: 4px; border: 1px dashed #000; }
-        .rules { font-size: 11px; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px; }
+        .slip-box { background: white; border: 2px solid #000; padding: 20px; max-width: 450px; margin: auto; }
+        .pin-area { font-size: 30px; font-weight: bold; text-align: center; background: #eee; padding: 10px; margin: 15px 0; border: 1px dashed #000; }
 
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            #slipPreview { display: block !important; margin: 0; }
-            .slip-box { border: 2px solid #000; width: 100%; max-width: 100%; }
-        }
+        @media print { .no-print { display: none !important; } #slipPreview { display: block !important; } }
     </style>
 </head>
-<body onload="lockPage(); renderTable();">
+<body onload="lockPage(); renderData();">
 
 <div class="container no-print">
-    <div class="header">
-        <h2 style="margin:0">CBT COMMAND CENTER</h2>
+    <div class="card" style="background:var(--dark); color:white; text-align:center;">
+        <h2 style="margin:0">CBT CONTROL PANEL</h2>
     </div>
 
     <div class="stats-grid">
-        <div class="stat-card">
-            <h4>Total Registered</h4>
-            <p id="countTotal">0</p>
-        </div>
-        <div class="stat-card">
-            <h4>Active Today</h4>
-            <p id="countActive">0</p>
-        </div>
+        <div class="stat-card"><h4>Total PINs</h4><p id="countTotal">0</p></div>
+        <div class="stat-card"><h4>Finished Tests</h4><p id="countDone">0</p></div>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0">New Candidate</h3>
-        <input type="text" id="candidateName" placeholder="Full Candidate Name">
-        <button class="btn-main" onclick="processNew()">Generate & View Slip</button>
+        <h3>Register Candidate</h3>
+        <input type="text" id="candidateName" placeholder="Candidate Full Name">
+        <button class="btn-main" onclick="processNew()">Generate Slip (Starts Tomorrow)</button>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--success);">
+        <h3>Student Results (Finished)</h3>
+        <table>
+            <thead><tr><th>NAME</th><th>SCORE</th><th>ACTION</th></tr></thead>
+            <tbody id="resultTable"></tbody>
+        </table>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0">Recent Candidates</h3>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>NAME</th>
-                        <th>SCHEDULE</th>
-                        <th>ACTION</th>
-                    </tr>
-                </thead>
-                <tbody id="dataTable"></tbody>
-            </table>
-        </div>
+        <h3>PIN History</h3>
+        <table id="pinTable">
+            <thead><tr><th>NAME</th><th>SCHEDULE</th><th>ACTION</th></tr></thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
 <div id="slipPreview">
     <div id="slipData"></div>
-    <div class="no-print" style="text-align:center; margin-top:15px;">
-        <button onclick="window.print()" style="padding:12px 30px; background:var(--success); color:white; border:none; border-radius:8px; font-weight:bold;">PRINT THIS SLIP</button>
-        <button onclick="document.getElementById('slipPreview').style.display='none'" style="padding:12px 30px; background:#666; color:white; border:none; border-radius:8px; margin-left:10px;">CLOSE</button>
+    <div class="no-print" style="text-align:center; margin-top:10px;">
+        <button onclick="window.print()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:5px;">Print Slip</button>
+        <button onclick="document.getElementById('slipPreview').style.display='none'" style="padding:10px 20px; background:#666; color:white; border:none; border-radius:5px;">Close</button>
     </div>
 </div>
 
 <script>
     function lockPage() {
-        if(prompt("Admin Access Code:") !== "1234") window.location.href="index.html";
+        if(prompt("Admin Key:") !== "1234") window.location.href="index.html";
     }
 
-    function renderTable() {
+    function renderData() {
         let db = JSON.parse(localStorage.getItem("exam_db")) || [];
-        document.getElementById('countTotal').innerText = db.length;
-        document.getElementById('countActive').innerText = db.filter(s => Date.now() < s.expires).length;
+        let results = JSON.parse(localStorage.getItem("exam_results")) || [];
 
-        document.getElementById('dataTable').innerHTML = db.slice().reverse().map((s, i) => `
-            <tr>
-                <td><strong>${s.name}</strong></td>
-                <td>${s.day} @ ${s.time}</td>
-                <td><button class="reprint-btn" onclick="prepareSlip(${db.length - 1 - i})">Reprint</button></td>
-            </tr>
+        document.getElementById('countTotal').innerText = db.length;
+        document.getElementById('countDone').innerText = results.length;
+
+        // Render PIN History
+        document.querySelector("#pinTable tbody").innerHTML = db.slice().reverse().map((s, i) => `
+            <tr><td>${s.name}</td><td>${s.day} @ ${s.time}</td>
+            <td><button onclick="prepareSlip(${db.length - 1 - i})">Slip</button></td></tr>
+        `).join('');
+
+        // Render Results Table
+        document.getElementById('resultTable').innerHTML = results.slice().reverse().map(r => `
+            <tr><td><strong>${r.name}</strong></td>
+            <td><span class="score-badge">${r.score}%</span></td>
+            <td><button onclick="alert('Printing Result for ${r.name}...')">Print Result</button></td></tr>
         `).join('');
     }
 
@@ -119,11 +100,15 @@
         let name = document.getElementById('candidateName').value.trim();
         if(!name) return alert("Enter name!");
 
-        let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        // TOMORROW LOGIC
+        let days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        let tomorrowIndex = (new Date().getDay() + 1) % 7;
+        let randomDay = days[tomorrowIndex]; // Forces it to start tomorrow
+
         let data = {
             name: name,
             pin: Math.floor(100000 + Math.random() * 900000),
-            day: days[Math.floor(Math.random() * days.length)],
+            day: randomDay,
             time: (Math.floor(Math.random() * 4) + 16) + ":00",
             expires: Date.now() + (48 * 60 * 60 * 1000)
         };
@@ -133,7 +118,7 @@
         localStorage.setItem("exam_db", JSON.stringify(db));
         
         document.getElementById('candidateName').value = "";
-        renderTable();
+        renderData();
         prepareSlip(db.length - 1);
     }
 
@@ -142,28 +127,15 @@
         document.getElementById('slipPreview').style.display = "block";
         document.getElementById('slipData').innerHTML = `
             <div class="slip-box">
-                <div class="slip-header">
-                    <h2 style="margin:0">MOCK CBT CENTER</h2>
-                    <p style="margin:2px; font-size:11px">2024/2025 EXAMINATION ADMIT SLIP</p>
-                </div>
-                <div class="slip-content">
-                    <div>
-                        <p style="margin:5px 0"><strong>NAME:</strong> ${s.name.toUpperCase()}</p>
-                        <p style="margin:5px 0"><strong>EXAM DAY:</strong> ${s.day}</p>
-                        <p style="margin:5px 0"><strong>TIME SLOT:</strong> ${s.time}</p>
-                        <p style="margin:5px 0"><strong>EXPIRY:</strong> 48hrs from Gen.</p>
-                    </div>
-                    <div class="photo-space">AFFIX<br>PASSPORT</div>
-                </div>
+                <h2 style="text-align:center; margin:0;">CBT EXAM SLIP</h2>
+                <hr>
+                <p><strong>NAME:</strong> ${s.name.toUpperCase()}</p>
+                <p><strong>DATE:</strong> Starts ${s.day} (Tomorrow)</p>
+                <p><strong>TIME:</strong> ${s.time}</p>
                 <div class="pin-area">${s.pin}</div>
-                <div class="rules">
-                    <strong>CANDIDATE INSTRUCTIONS:</strong><br>
-                    1. Do not share your PIN. 2. Login is only active during your time slot. 3. System auto-submits once time is up.
-                </div>
-                <p style="text-align:center; font-size:10px; margin-top:15px; letter-spacing:2px;">|||| || | || ||| | ${s.pin} | || ||</p>
+                <p style="font-size:11px; text-align:center;">Present this slip to the admin after your test to print your official score.</p>
             </div>
         `;
-        window.scrollTo(0, document.body.scrollHeight);
     }
 </script>
 </body>
