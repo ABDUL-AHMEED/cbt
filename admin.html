@@ -1,121 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>CBT Admin | Results & PINs</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Records</title>
     <style>
-        /* Reset & Base */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; min-height: 100vh; }
-
-        /* Sidebar Navigation */
-        .sidebar {
-            width: 250px;
-            background: #1a202c;
-            color: white;
-            padding: 20px;
-            flex-shrink: 0;
-        }
-        .sidebar h2 { font-size: 1.2rem; margin-bottom: 30px; color: #63b3ed; }
-        .nav-item { padding: 12px; cursor: pointer; border-radius: 8px; margin-bottom: 5px; transition: 0.3s; }
-        .nav-item:hover, .nav-item.active { background: #2d3748; color: #63b3ed; }
-
-        /* Main Content */
-        .main-content {
-            flex-grow: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-        .header-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        /* Data Table */
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid #edf2f7; color: #718096; font-size: 0.85rem; text-transform: uppercase; }
-        td { padding: 15px 12px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+        :root { --primary: #007bff; --success: #28a745; --dark: #343a40; --light: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; margin: 0; padding: 15px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; border-top: 4px solid var(--primary); }
         
-        /* Action Button */
-        .btn-action {
-            padding: 6px 12px;
-            background: #4a5568;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .btn-action:hover { background: #2d3748; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background: var(--light); }
+        .score-badge { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 5px; font-weight: bold; }
 
-        /* Hide everything else when printing */
-        @media print {
-            .sidebar, .header-bar, .btn-action, .card h3 { display: none !important; }
-            .main-content { padding: 0; }
-            body { background: white; }
-        }
+        /* THE SLIP */
+        #slipPreview { display: none; margin-top: 30px; }
+        .slip-box { background: white; border: 2px solid #000; padding: 20px; max-width: 450px; margin: auto; }
+        .pin-area { font-size: 30px; font-weight: bold; text-align: center; background: #eee; padding: 10px; margin: 15px 0; border: 1px dashed #000; }
+
+        @media print { .no-print { display: none !important; } #slipPreview { display: block !important; } }
     </style>
 </head>
-<body>
+<body onload="lockPage(); renderData();">
 
-    <div class="sidebar">
-        <h2>Admin Panel</h2>
-        <div class="nav-item active">Dashboard</div>
-        <div class="nav-item">User Records</div>
-        <div class="nav-item">Settings</div>
-        <div class="nav-item" style="margin-top: 50px; color: #fc8181;">Logout</div>
+<div class="container no-print">
+    <div class="card" style="background:var(--dark); color:white; text-align:center;">
+        <h2 style="margin:0">CBT CONTROL PANEL</h2>
     </div>
 
-    <div class="main-content">
-        <div class="header-bar">
-            <h1>User Management</h1>
-            <p>Welcome back, Admin</p>
-        </div>
-
-        <div class="card">
-            <h3>Registered Applicants</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>#001</td>
-                        <td>John Doe Al-Bakare</td>
-                        <td>john.doe@example.com</td>
-                        <td style="color: green; font-weight: bold;">Verified</td>
-                        <td><button class="btn-action" onclick="alert('Generating Slip...')">View Slip</button></td>
-                    </tr>
-                    <tr>
-                        <td>#002</td>
-                        <td>Sarah Connor</td>
-                        <td>sarah.c@example.com</td>
-                        <td style="color: orange; font-weight: bold;">Pending</td>
-                        <td><button class="btn-action">View Slip</button></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="stats-grid">
+        <div class="stat-card"><h4>Total PINs</h4><p id="countTotal">0</p></div>
+        <div class="stat-card"><h4>Finished Tests</h4><p id="countDone">0</p></div>
     </div>
 
+    <div class="card">
+        <h3>Register Candidate</h3>
+        <input type="text" id="candidateName" placeholder="Candidate Full Name">
+        <button class="btn-main" onclick="processNew()">Generate Slip (Starts Tomorrow)</button>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--success);">
+        <h3>Student Results (Finished)</h3>
+        <table>
+            <thead><tr><th>NAME</th><th>SCORE</th><th>ACTION</th></tr></thead>
+            <tbody id="resultTable"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>PIN History</h3>
+        <table id="pinTable">
+            <thead><tr><th>NAME</th><th>SCHEDULE</th><th>ACTION</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="slipPreview">
+    <div id="slipData"></div>
+    <div class="no-print" style="text-align:center; margin-top:10px;">
+        <button onclick="window.print()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:5px;">Print Slip</button>
+        <button onclick="document.getElementById('slipPreview').style.display='none'" style="padding:10px 20px; background:#666; color:white; border:none; border-radius:5px;">Close</button>
+    </div>
+</div>
+
+<script>
+    function lockPage() {
+        if(prompt("Admin Key:") !== "1234") window.location.href="index.html";
+    }
+
+    function renderData() {
+        let db = JSON.parse(localStorage.getItem("exam_db")) || [];
+        let results = JSON.parse(localStorage.getItem("exam_results")) || [];
+
+        document.getElementById('countTotal').innerText = db.length;
+        document.getElementById('countDone').innerText = results.length;
+
+        // Render PIN History
+        document.querySelector("#pinTable tbody").innerHTML = db.slice().reverse().map((s, i) => `
+            <tr><td>${s.name}</td><td>${s.day} @ ${s.time}</td>
+            <td><button onclick="prepareSlip(${db.length - 1 - i})">Slip</button></td></tr>
+        `).join('');
+
+        // Render Results Table
+        document.getElementById('resultTable').innerHTML = results.slice().reverse().map(r => `
+            <tr><td><strong>${r.name}</strong></td>
+            <td><span class="score-badge">${r.score}%</span></td>
+            <td><button onclick="alert('Printing Result for ${r.name}...')">Print Result</button></td></tr>
+        `).join('');
+    }
+
+    function processNew() {
+        let name = document.getElementById('candidateName').value.trim();
+        if(!name) return alert("Enter name!");
+
+        // TOMORROW LOGIC
+        let days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        let tomorrowIndex = (new Date().getDay() + 1) % 7;
+        let randomDay = days[tomorrowIndex]; // Forces it to start tomorrow
+
+        let data = {
+            name: name,
+            pin: Math.floor(100000 + Math.random() * 900000),
+            day: randomDay,
+            time: (Math.floor(Math.random() * 4) + 16) + ":00",
+            expires: Date.now() + (48 * 60 * 60 * 1000)
+        };
+
+        let db = JSON.parse(localStorage.getItem("exam_db")) || [];
+        db.push(data);
+        localStorage.setItem("exam_db", JSON.stringify(db));
+        
+        document.getElementById('candidateName').value = "";
+        renderData();
+        prepareSlip(db.length - 1);
+    }
+
+    function prepareSlip(index) {
+        let s = JSON.parse(localStorage.getItem("exam_db"))[index];
+        document.getElementById('slipPreview').style.display = "block";
+        document.getElementById('slipData').innerHTML = `
+            <div class="slip-box">
+                <h2 style="text-align:center; margin:0;">CBT EXAM SLIP</h2>
+                <hr>
+                <p><strong>NAME:</strong> ${s.name.toUpperCase()}</p>
+                <p><strong>DATE:</strong> Starts ${s.day} (Tomorrow)</p>
+                <p><strong>TIME:</strong> ${s.time}</p>
+                <div class="pin-area">${s.pin}</div>
+                <p style="font-size:11px; text-align:center;">Present this slip to the admin after your test to print your official score.</p>
+            </div>
+        `;
+    }
+</script>
 </body>
 </html>
