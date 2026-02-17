@@ -3,243 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Printable Official Slip</title>
+    <title>Admin Dashboard - Records</title>
     <style>
-        /* BASE STYLES */
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #e9ecef;
-            margin: 0;
+        /* Reset & Base */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; min-height: 100vh; }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 250px;
+            background: #1a202c;
+            color: white;
             padding: 20px;
+            flex-shrink: 0;
+        }
+        .sidebar h2 { font-size: 1.2rem; margin-bottom: 30px; color: #63b3ed; }
+        .nav-item { padding: 12px; cursor: pointer; border-radius: 8px; margin-bottom: 5px; transition: 0.3s; }
+        .nav-item:hover, .nav-item.active { background: #2d3748; color: #63b3ed; }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .header-bar {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
+            margin-bottom: 30px;
         }
 
-        /* PRINT BUTTON */
-        .no-print-zone {
-            margin-bottom: 20px;
+        /* Data Table */
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-
-        .btn-print {
-            padding: 12px 25px;
-            background-color: #007bff;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #edf2f7; color: #718096; font-size: 0.85rem; text-transform: uppercase; }
+        td { padding: 15px 12px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+        
+        /* Action Button */
+        .btn-action {
+            padding: 6px 12px;
+            background: #4a5568;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: background 0.3s;
+            font-size: 0.8rem;
         }
+        .btn-action:hover { background: #2d3748; }
 
-        .btn-print:hover {
-            background-color: #0056b3;
-        }
-
-        /* THE SLIP CONTAINER (A4 Proportion) */
-        .slip-card {
-            width: 210mm; /* A4 Width */
-            min-height: 120mm; /* Half A4 height - looks better for slips */
-            background-color: white;
-            padding: 40px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 1px solid #ccc;
-            position: relative;
-            box-sizing: border-box;
-        }
-
-        /* HEADER SECTION */
-        .slip-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo-circle {
-            width: 60px;
-            height: 60px;
-            background: #333;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .header-titles h1 {
-            margin: 0;
-            font-size: 22px;
-            text-transform: uppercase;
-            color: #1a1a1a;
-        }
-
-        .header-titles p {
-            margin: 2px 0 0;
-            font-size: 14px;
-            color: #666;
-        }
-
-        /* BODY SECTION */
-        .slip-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .info-group {
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-        }
-
-        .info-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 800;
-            color: #888;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .info-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #222;
-        }
-
-        .status-verified {
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        /* FOOTER / SIGNATURE */
-        .slip-footer {
-            margin-top: auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .signature-section {
-            text-align: center;
-        }
-
-        .sig-line {
-            width: 200px;
-            border-top: 1px solid #333;
-            margin-bottom: 5px;
-        }
-
-        .sig-text {
-            font-size: 12px;
-            color: #555;
-            font-style: italic;
-        }
-
-        .barcode-area {
-            text-align: right;
-        }
-
-        .mock-barcode {
-            width: 150px;
-            height: 30px;
-            background: repeating-linear-gradient(
-                90deg,
-                #333,
-                #333 2px,
-                #fff 2px,
-                #fff 4px
-            );
-        }
-
-        /* PRINT LOGIC */
+        /* Hide everything else when printing */
         @media print {
-            body {
-                background: none;
-                padding: 0;
-            }
-            .no-print-zone {
-                display: none;
-            }
-            .slip-card {
-                box-shadow: none;
-                border: none;
-                width: 100%;
-                margin: 0;
-            }
-            @page {
-                size: A4;
-                margin: 15mm;
-            }
+            .sidebar, .header-bar, .btn-action, .card h3 { display: none !important; }
+            .main-content { padding: 0; }
+            body { background: white; }
         }
     </style>
 </head>
 <body>
 
-    <div class="no-print-zone">
-        <button class="btn-print" onclick="window.print()">Print Official Slip</button>
+    <div class="sidebar">
+        <h2>Admin Panel</h2>
+        <div class="nav-item active">Dashboard</div>
+        <div class="nav-item">User Records</div>
+        <div class="nav-item">Settings</div>
+        <div class="nav-item" style="margin-top: 50px; color: #fc8181;">Logout</div>
     </div>
 
-    <div class="slip-card">
-        <div class="slip-header">
-            <div class="logo-area">
-                <div class="logo-circle">INSTITUTION<br>LOGO</div>
-                <div class="header-titles">
-                    <h1>Clearance & Record Slip</h1>
-                    <p>Administrative Services Division</p>
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <div class="info-label">Slip ID</div>
-                <div class="info-value" style="font-size: 14px;">#REF-99021-2026</div>
-            </div>
+    <div class="main-content">
+        <div class="header-bar">
+            <h1>User Management</h1>
+            <p>Welcome back, Admin</p>
         </div>
 
-        <div class="slip-content">
-            <div class="info-group">
-                <span class="info-label">Full Name of Holder</span>
-                <span class="info-value">John Doe Al-Bakare</span>
-            </div>
-            <div class="info-group">
-                <span class="info-label">Date Issued</span>
-                <span class="info-value">February 17, 2026</span>
-            </div>
-            <div class="info-group">
-                <span class="info-label">Document Type</span>
-                <span class="info-value">Verification Clearance</span>
-            </div>
-            <div class="info-group">
-                <span class="info-label">Verification Status</span>
-                <span class="info-value status-verified">● OFFICIALLY VERIFIED</span>
-            </div>
-            <div class="info-group" style="grid-column: span 2;">
-                <span class="info-label">Remarks</span>
-                <span class="info-value" style="font-weight: 400; font-size: 14px;">This document serves as official proof of record clearance. Please present this slip for final processing.</span>
-            </div>
-        </div>
-
-        <div class="slip-footer">
-            <div class="signature-section">
-                <div class="sig-line"></div>
-                <span class="sig-text">Registrar's Signature</span>
-            </div>
-            <div class="barcode-area">
-                <div class="mock-barcode"></div>
-                <span style="font-size: 10px; color: #888;">*99021-2026-VOID*</span>
-            </div>
+        <div class="card">
+            <h3>Registered Applicants</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#001</td>
+                        <td>John Doe Al-Bakare</td>
+                        <td>john.doe@example.com</td>
+                        <td style="color: green; font-weight: bold;">Verified</td>
+                        <td><button class="btn-action" onclick="alert('Generating Slip...')">View Slip</button></td>
+                    </tr>
+                    <tr>
+                        <td>#002</td>
+                        <td>Sarah Connor</td>
+                        <td>sarah.c@example.com</td>
+                        <td style="color: orange; font-weight: bold;">Pending</td>
+                        <td><button class="btn-action">View Slip</button></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
